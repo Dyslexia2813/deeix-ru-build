@@ -1,4 +1,4 @@
-name: Build ru-RU frontend
+name: Build ru-RU frontend and backend
 
 on:
   workflow_dispatch:
@@ -31,9 +31,9 @@ jobs:
 
       - name: Extract the static site
         run: |
-          docker create --name extract deeix-ru-frontend
-          docker cp extract:/src/apps/web/out ./out
-          docker rm extract
+          docker create --name extract-frontend deeix-ru-frontend
+          docker cp extract-frontend:/src/apps/web/out ./out
+          docker rm extract-frontend
           test -f out/index.html
           du -sh out
 
@@ -41,4 +41,23 @@ jobs:
         with:
           name: deeix-ru-out
           path: out
+          if-no-files-found: error
+
+      - name: Build the backend with the official Dockerfile
+        env:
+          TAG: ${{ inputs.tag }}
+        run: docker build --target backend-builder --build-arg GIT_COMMIT="$TAG" -t deeix-ru-backend src
+
+      - name: Extract the backend binary
+        run: |
+          docker create --name extract-backend deeix-ru-backend
+          docker cp extract-backend:/out/deeix-chat ./deeix-chat
+          docker rm extract-backend
+          chmod +x deeix-chat
+          ls -la deeix-chat
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deeix-ru-backend
+          path: deeix-chat
           if-no-files-found: error
