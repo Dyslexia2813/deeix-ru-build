@@ -1,0 +1,24 @@
+# deeix-ocr next to DEEIX Chat. Start:
+#   docker compose -f /opt/deeix-ru/compose.ocr.yml up -d
+# DEEIX reaches it inside the deeix-chat-network as http://deeix-ocr:8004/ocr
+services:
+  ocr:
+    container_name: deeix-ocr
+    image: deeix-ocr:latest
+    restart: unless-stopped
+    environment:
+      OCR_LANG: rus+eng
+      OCR_DPI: "200"
+      OCR_MAX_PAGES: "20"
+      OCR_BUDGET_SECONDS: "540"
+    mem_limit: 300m
+    memswap_limit: 300m
+    cpus: 1.0
+    pids_limit: 64
+    networks:
+      - deeix-chat
+
+networks:
+  deeix-chat:
+    external: true
+    name: deeix-chat-network

@@ -1,0 +1,54 @@
+name: Build deeix-ocr image
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "ocr-service/**"
+      - ".github/workflows/ocr-image.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: ocr-service/go.mod
+
+      - name: Unit tests
+        working-directory: ocr-service
+        run: go test ./...
+
+      - name: Build the image
+        run: docker build -t deeix-ocr:latest ocr-service
+
+      - name: Smoke test with a 300 MB memory limit
+        run: |
+          docker run -d --name ocr --memory 300m --memory-swap 300m -p 127.0.0.1:8004:8004 deeix-ocr:latest
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8004/healthz && break; sleep 1; done
+          echo
+          curl -fsS -F file=@ocr-service/testdata/scan.pdf -F page_ranges=1 http://127.0.0.1:8004/ocr | tee result.json
+          echo
+          grep -q "ДОГОВОР" result.json
+          docker stats --no-stream ocr
+          docker logs ocr
+          docker rm -f ocr
+
+      - name: Save the image
+        run: |
+          docker save deeix-ocr:latest | gzip -6 > deeix-ocr-image.tar.gz
+          docker images deeix-ocr:latest
+          ls -la deeix-ocr-image.tar.gz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deeix-ocr-image
+          path: deeix-ocr-image.tar.gz
+          compression-level: 0
+          if-no-files-found: error
