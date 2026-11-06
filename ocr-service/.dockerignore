@@ -1,0 +1,4 @@
+*_test.go
+*.md
+testdata
+compose.ocr.yml
