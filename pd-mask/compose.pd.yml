@@ -1,0 +1,22 @@
+# deeix-pd-mask next to DEEIX Chat. Start:
+#   docker compose -f /opt/deeix-ru/compose.pd.yml up -d
+# DEEIX reaches it inside the deeix-chat-network as http://deeix-pd-mask:8090/<route>/...
+# Settings (PD_SECRET, PD_ROUTES, ...) live in /opt/deeix-ru/pd-mask.env, see README.md.
+services:
+  pd-mask:
+    container_name: deeix-pd-mask
+    image: deeix-pd-mask:latest
+    restart: unless-stopped
+    env_file: /opt/deeix-ru/pd-mask.env
+    mem_limit: 96m
+    memswap_limit: 96m
+    cpus: 0.5
+    pids_limit: 64
+    read_only: true
+    networks:
+      - deeix-chat
+
+networks:
+  deeix-chat:
+    external: true
+    name: deeix-chat-network

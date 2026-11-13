@@ -1,0 +1,56 @@
+name: Build deeix-pd-mask image
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "pd-mask/**"
+      - ".github/workflows/pd-mask-image.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: pd-mask/go.mod
+
+      - name: Unit tests
+        working-directory: pd-mask
+        run: go vet ./... && go test ./...
+
+      - name: Build the image
+        run: docker build -t deeix-pd-mask:latest pd-mask
+
+      - name: Smoke test with a 96 MB memory limit
+        run: |
+          docker run --rm -i -e PD_SECRET=smoke-test-secret-0123 deeix-pd-mask:latest mask < pd-mask/testdata/dogovor.txt | tee masked.txt
+          ! grep -E "Иванов|500100732259|916|ivanov@" masked.txt
+          grep -q "\[FIO_" masked.txt
+          docker run -d --name pd --memory 96m --memory-swap 96m -p 127.0.0.1:8090:8090 \
+            -e PD_SECRET=smoke-test-secret-0123 -e "PD_ROUTES=ds=https://api.deepseek.com" deeix-pd-mask:latest
+          for i in $(seq 1 20); do curl -fsS http://127.0.0.1:8090/healthz && break; sleep 1; done
+          echo
+          docker exec pd /deeix-pd-mask healthcheck
+          docker stats --no-stream pd
+          docker logs pd
+          docker rm -f pd
+
+      - name: Save the image
+        run: |
+          docker save deeix-pd-mask:latest | gzip -6 > deeix-pd-mask-image.tar.gz
+          docker images deeix-pd-mask:latest
+          ls -la deeix-pd-mask-image.tar.gz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deeix-pd-mask-image
+          path: deeix-pd-mask-image.tar.gz
+          compression-level: 0
+          if-no-files-found: error
