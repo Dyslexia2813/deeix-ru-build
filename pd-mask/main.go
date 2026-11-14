@@ -68,7 +68,7 @@ func parseRoutes(raw string) (map[string]route, error) {
 		}
 		name, target, ok := strings.Cut(entry, "=")
 		name = strings.TrimSpace(name)
-		if !ok || name == "" || strings.ContainsAny(name, "/ ") {
+		if !ok || name == "" || strings.ContainsAny(name, "/ ") || name == "preview" || name == "healthz" {
 			return nil, fmt.Errorf("bad route %q (want name=https://host)", entry)
 		}
 		fields := strings.Fields(target)
@@ -177,6 +177,10 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		_, _ = io.WriteString(w, `{"status":"ok"}`)
 		return
 	}
+	if r.URL.Path == "/preview" {
+		s.servePreview(w, r)
+		return
+	}
 	trimmed := strings.TrimPrefix(r.URL.Path, "/")
 	name, rest, _ := strings.Cut(trimmed, "/")
 	rt, ok := s.cfg.routes[name]
@@ -207,6 +211,10 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if err == nil && isObj {
 			flag, hasFlag := obj[s.cfg.flag]
 			delete(obj, s.cfg.flag)
+			rulesKey := s.cfg.flag + "_rules"
+			rawRules, hasRules := obj[rulesKey]
+			delete(obj, rulesKey)
+			hasFlag = hasFlag || hasRules
 			want := rt.always || flag == true || flag == "true" || flag == "on"
 			if want {
 				if proto == protoUnknown {
@@ -215,6 +223,7 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				}
 				started := time.Now()
 				masker = NewMasker(s.cfg.secret, s.cfg.enabled)
+				masker.rules = parseRules(rawRules)
 				stats := &requestStats{}
 				if proto == protoOpenAIChat {
 					masker.maskOpenAIChat(obj, s.cfg.hint, stats)
@@ -313,6 +322,35 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	w.WriteHeader(resp.StatusCode)
+	_, _ = w.Write(data)
+}
+
+// servePreview masks texts for the preview window in DEEIX ("what the model will see").
+// It is reached only from the DEEIX backend inside the Docker network; nothing is forwarded.
+func (s *server) servePreview(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "POST only", http.StatusMethodNotAllowed)
+		return
+	}
+	var req previewRequest
+	dec := json.NewDecoder(io.LimitReader(r.Body, 8<<20))
+	if err := dec.Decode(&req); err != nil {
+		http.Error(w, "bad request: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	if len(req.Texts) > 50 {
+		req.Texts = req.Texts[:50]
+	}
+	started := time.Now()
+	m := NewMasker(s.cfg.secret, s.cfg.enabled)
+	resp := m.preview(req)
+	log.Printf("preview texts=%d masked=%d %s suspects=%d took=%s", len(req.Texts), m.Total(), countsString(m.counts), len(resp.Suspects), time.Since(started).Round(time.Millisecond))
+	w.Header().Set("Content-Type", "application/json")
+	data, err := encodeJSON(resp)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	_, _ = w.Write(data)
 }
 
