@@ -26,9 +26,10 @@ const (
 	typeAccount = "SCHET"
 	typeBirth   = "DR"
 	typeAddress = "ADRES"
+	typeOther   = "PD" // values the user asked to hide in the preview
 )
 
-var labelPattern = regexp.MustCompile(`\[(FIO|TEL|EMAIL|INN|SNILS|OGRN|PASPORT|KARTA|SCHET|DR|ADRES)_[a-z2-7]{5}\]`)
+var labelPattern = regexp.MustCompile(`\[(FIO|TEL|EMAIL|INN|SNILS|OGRN|PASPORT|KARTA|SCHET|DR|ADRES|PD)_[a-z2-7]{5}\]`)
 
 // labelPrefixPattern matches an unfinished label at the end of a streamed chunk.
 var labelPrefixPattern = regexp.MustCompile(`\[[A-Z]{0,7}(?:_[a-z2-7]{0,5})?$`)
@@ -43,14 +44,21 @@ type span struct {
 
 // Masker replaces personal data with labels and remembers label -> original for one request.
 type Masker struct {
-	secret  []byte
-	enabled map[string]bool
-	values  map[string]string // label -> original text (longest form seen)
-	counts  map[string]int    // type -> replacements
+	secret      []byte
+	enabled     map[string]bool
+	values      map[string]string // label -> original text (longest form seen)
+	counts      map[string]int    // type -> replacements
+	labelCounts map[string]int    // label -> replacements
+	labelKinds  map[string]string // label -> type
+	rules       *Rules
+	kept        map[string]string // label -> value left as is because of rules.Keep
+	keptCounts  map[string]int
+	labelManual map[string]string // label -> user's Hide word
 }
 
 func NewMasker(secret []byte, enabled map[string]bool) *Masker {
-	return &Masker{secret: secret, enabled: enabled, values: map[string]string{}, counts: map[string]int{}}
+	return &Masker{secret: secret, enabled: enabled, values: map[string]string{}, counts: map[string]int{},
+		labelCounts: map[string]int{}, labelKinds: map[string]string{}, kept: map[string]string{}, keptCounts: map[string]int{}, labelManual: map[string]string{}}
 }
 
 func (m *Masker) Total() int {
@@ -73,7 +81,7 @@ func (m *Masker) Mask(text string) string {
 	if text == "" {
 		return text
 	}
-	spans := findSpans(text)
+	spans := m.spans(text)
 	if len(spans) == 0 {
 		return text
 	}
@@ -81,11 +89,24 @@ func (m *Masker) Mask(text string) string {
 	out.Grow(len(text))
 	last := 0
 	for _, s := range spans {
-		if m.enabled != nil && !m.enabled[s.kind] {
+		if m.enabled != nil && !m.enabled[s.kind] && s.kind != typeOther {
 			continue
 		}
 		original := text[s.start:s.end]
 		lbl := m.label(s.kind, s.key)
+		if m.rules.keeps(s, original) {
+			if prev, ok := m.kept[lbl]; !ok || displayScore(original) > displayScore(prev) {
+				m.kept[lbl] = original
+			}
+			m.keptCounts[lbl]++
+			m.labelKinds[lbl] = s.kind
+			continue
+		}
+		m.labelCounts[lbl]++
+		m.labelKinds[lbl] = s.kind
+		if word := m.rules.hideWord(s); word != "" {
+			m.labelManual[lbl] = word
+		}
 		if prev, ok := m.values[lbl]; !ok || displayScore(original) > displayScore(prev) {
 			m.values[lbl] = original
 		}
@@ -421,6 +442,10 @@ func snilsValid(d string) bool {
 }
 
 func findSpans(text string) []span {
+	return resolveOverlaps(findRawSpans(text))
+}
+
+func findRawSpans(text string) []span {
 	var spans []span
 	addDigits := func(start, end int, kind, key string) {
 		if boundaryOK(text, start, end, true) {
@@ -478,7 +503,7 @@ func findSpans(text string) []span {
 		spans = append(spans, span{m[0], m[1], typeAddress, strings.ToLower(strings.Join(strings.Fields(addr), " "))})
 	}
 	spans = append(spans, findFIO(text)...)
-	return resolveOverlaps(spans)
+	return spans
 }
 
 // resolveOverlaps keeps the longest span among overlapping ones (earlier start on ties).
