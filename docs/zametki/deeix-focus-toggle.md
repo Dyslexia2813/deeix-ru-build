@@ -1,0 +1,8 @@
+# deeix-focus-toggle
+
+_Плавающая кнопка ↕ справа от «Прокрутить в конец», скрывающая заголовок чата и поле ввода — patches/focus-toggle.patch, PR #16._
+
+- 2026-10-31 Kimi попросил кнопку под «чёрточками» навигации (chat-message-position-rail.tsx), чтобы скрывать название чата и поле ввода ради места под ответ. Сказал, что это важнее #15 (#15 не ставил) — патч сделан от main, независимо от #15.
+- 2026-11-01 Kimi передумал: кнопка в рейле не видна на телефоне, ничего не ставил. Переделано: плавающая кнопка MoveVertical (↕) в chat-area.tsx рядом с MessageScrollerButton (absolute bottom-4 left-[calc(50%+1.5rem)]), стиль 1:1 как у «Прокрутить в конец» без подсветки нажатого; пара кнопок по центру (scroll inset-inline-start 50%-1.25rem, ↕ 50%+0.25rem или 50%-1rem одна по useMessageScrollerScrollable().end) (Kimi 2026-11-01), видна всегда при messages>0, на всех ширинах; шапка и обёртка ChatInput получают `hidden`. Состояние в hooks/use-chat-focus-mode.ts (в памяти), сброс в app-chat-area.tsx при смене conversationID и размонтировании. Рейл не трогается. Флаг --no-focus-toggle.
+- PR https://github.com/Dyslexia2813/deeix-ru-build/pull/16 (Kimi проверил на VPS, слит 2026-11-01, стоит на сервере), сборка run 41306400052, инструкция ../instrukcii/focus-toggle/ustanovka.md (копия out-pered-knopkoy).
+- Локальный запуск для проверки: make build-api/build-web, CONFIG по умолчанию ./config.yaml (frontend_dist_dir, sqlite path, storage root_dir), чат открывается /chat?conversation_id=<public_id>; онбординг админа надо пройти в UI (флаги в БД не помогают). См. [deeix-composer-bottom](deeix-composer-bottom.md).

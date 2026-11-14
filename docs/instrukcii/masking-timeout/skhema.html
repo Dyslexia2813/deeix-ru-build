@@ -1,0 +1,150 @@
+<title>Обрыв на маскировании</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;600&family=Unbounded:wght@600&display=swap">
+<style>
+/* Layout: одна колонка-«разрез» запроса, сверху вниз: путь запроса → рост тела → контекстное окно → что делать */
+:root{
+  --bg:#f5f6f8; --panel:#ffffff; --fg:#1b2230; --muted:#5d6878; --line:#d5dae2;
+  --deeix:#2f6fd6; --gate:#c27a12; --model:#2b8a5e; --bad:#c43d3d; --soft:#e9eef7;
+  --display:"Unbounded",system-ui,sans-serif; --body:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#12161d; --panel:#1a2029; --fg:#e4e8ef; --muted:#9aa5b5; --line:#2e3744;
+  --deeix:#6ea1f5; --gate:#e3a64a; --model:#5cc497; --bad:#ef7373; --soft:#1f2836; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12161d; --panel:#1a2029; --fg:#e4e8ef; --muted:#9aa5b5; --line:#2e3744;
+  --deeix:#6ea1f5; --gate:#e3a64a; --model:#5cc497; --bad:#ef7373; --soft:#1f2836; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55}
+.wrap{max-width:860px;margin:0 auto;padding-block:28px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:28px}
+h1{font-family:var(--display);font-size:1.5rem;margin:0;text-wrap:balance;line-height:1.25}
+h2{font-family:var(--display);font-size:1.02rem;margin:0 0 10px;text-wrap:balance}
+p{margin:0;max-width:65ch}
+.lead{color:var(--muted)}
+section{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px;display:grid;gap:12px;min-width:0}
+.scroll{overflow-x:auto}
+svg text{font-family:var(--body)}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+code{font-family:var(--mono);font-size:.9em;background:var(--soft);padding:1px 5px;border-radius:4px}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:.85rem;color:var(--muted)}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px;background:var(--c)}
+ol.fix{margin:0;padding-left:1.3em;display:grid;gap:10px}
+ol.fix li{max-width:70ch}
+.tag{font-size:.75rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:99px;margin-left:6px;vertical-align:1px}
+.ok{background:color-mix(in srgb,var(--model) 18%,transparent);color:var(--model)}
+.mid{background:color-mix(in srgb,var(--gate) 18%,transparent);color:var(--gate)}
+.note{font-size:.85rem;color:var(--muted)}
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:8px">
+    <h1>Почему ответ DeepSeek Flash оборвался на маскировании</h1>
+    <p class="lead">DEEIX, шлюз провайдера с маскированием данных и модель. Где растёт запрос, где он ломается и при чём тут контекстное окно.</p>
+  </header>
+
+  <section>
+    <h2>1. Путь одного запроса</h2>
+    <div class="scroll">
+    <svg viewBox="0 0 800 210" width="100%" style="min-width:620px" role="img" aria-label="Схема: DEEIX отправляет запрос в шлюз, шлюз маскирует данные с ограничением по времени и передаёт модели">
+      <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--muted)"/></marker></defs>
+      <!-- DEEIX -->
+      <rect x="10" y="40" width="220" height="130" rx="8" fill="var(--soft)" stroke="var(--deeix)" stroke-width="2"/>
+      <text x="120" y="66" text-anchor="middle" font-weight="600" fill="var(--deeix)">DEEIX</text>
+      <text x="120" y="92" text-anchor="middle" font-size="13" fill="var(--fg)">собирает запрос:</text>
+      <text x="120" y="112" text-anchor="middle" font-size="13" fill="var(--fg)">история чата</text>
+      <text x="120" y="130" text-anchor="middle" font-size="13" fill="var(--fg)">+ результаты инструментов</text>
+      <text x="120" y="155" text-anchor="middle" font-size="12" fill="var(--muted)">здесь работает окно контекста</text>
+      <!-- gateway -->
+      <rect x="290" y="40" width="230" height="130" rx="8" fill="var(--soft)" stroke="var(--gate)" stroke-width="2"/>
+      <text x="405" y="66" text-anchor="middle" font-weight="600" fill="var(--gate)">Шлюз провайдера</text>
+      <text x="405" y="92" text-anchor="middle" font-size="13" fill="var(--fg)">ищет и скрывает ПД</text>
+      <text x="405" y="112" text-anchor="middle" font-size="13" fill="var(--fg)">во всём тексте запроса</text>
+      <text x="405" y="136" text-anchor="middle" font-size="13" font-weight="600" fill="var(--bad)">⏱ срок подготовки</text>
+      <text x="405" y="155" text-anchor="middle" font-size="12" fill="var(--muted)">не успел → 503 masking_timeout</text>
+      <!-- model -->
+      <rect x="580" y="40" width="210" height="130" rx="8" fill="var(--soft)" stroke="var(--model)" stroke-width="2"/>
+      <text x="685" y="66" text-anchor="middle" font-weight="600" fill="var(--model)">DeepSeek Flash</text>
+      <text x="685" y="92" text-anchor="middle" font-size="13" fill="var(--fg)">окно 1 048 576 токенов</text>
+      <text x="685" y="112" text-anchor="middle" font-size="13" fill="var(--fg)">до неё запрос</text>
+      <text x="685" y="130" text-anchor="middle" font-size="13" fill="var(--fg)">не дошёл</text>
+      <!-- arrows -->
+      <line x1="232" y1="95" x2="286" y2="95" stroke="var(--muted)" stroke-width="2" marker-end="url(#ar)"/>
+      <line x1="522" y1="95" x2="576" y2="95" stroke="var(--line)" stroke-width="2" stroke-dasharray="5 5" marker-end="url(#ar)"/>
+      <line x1="288" y1="135" x2="234" y2="135" stroke="var(--bad)" stroke-width="2" marker-end="url(#ar)"/>
+      <text x="261" y="155" text-anchor="middle" font-size="11" fill="var(--bad)">503</text>
+      <text x="261" y="30" text-anchor="middle" font-size="11" fill="var(--muted)">~400 КБ</text>
+    </svg>
+    </div>
+    <p>Лимит модели в 1 млн токенов здесь ни на что не влияет: запрос оборвался раньше, на шлюзе. Время маскирования растёт вместе с объёмом текста, и на ~400 КБ шлюз перестал укладываться в свой срок.</p>
+  </section>
+
+  <section>
+    <h2>2. Как запрос растёт внутри одного ответа</h2>
+    <p>Каждый вызов инструмента — это новый запрос к модели. В нём уходит всё сразу: история, вопрос, все прежние результаты инструментов и новый. Шлюз маскирует весь этот текст заново на каждом шаге.</p>
+    <div class="scroll">
+    <svg viewBox="0 0 800 250" width="100%" style="min-width:620px" role="img" aria-label="Столбцы: размер запроса растёт с каждым шагом до 398 КБ, после чего срабатывает тайм-аут маскирования">
+      <line x1="60" y1="200" x2="790" y2="200" stroke="var(--line)"/>
+      <line x1="60" y1="20" x2="60" y2="200" stroke="var(--line)"/>
+      <text x="52" y="204" text-anchor="end" font-size="11" fill="var(--muted)" class="mono">0</text>
+      <text x="52" y="114" text-anchor="end" font-size="11" fill="var(--muted)" class="mono">200 КБ</text>
+      <line x1="60" y1="110" x2="790" y2="110" stroke="var(--line)" stroke-dasharray="2 4"/>
+      <text x="52" y="24" text-anchor="end" font-size="11" fill="var(--muted)" class="mono">400 КБ</text>
+      <line x1="60" y1="20" x2="790" y2="20" stroke="var(--line)" stroke-dasharray="2 4"/>
+      <g id="bars"></g>
+      <text x="425" y="240" text-anchor="middle" font-size="12" fill="var(--muted)">запросы к модели в одном ответе (иллюстрация: известен только последний размер, 398 КБ)</text>
+    </svg>
+    </div>
+    <div class="legend"><span style="--c:var(--deeix)">прошёл маскирование</span><span style="--c:var(--bad)">не уложился в срок</span></div>
+    <p class="note">Сжатие истории в DEEIX внутри одного ответа не работает. Оно срабатывает только до отправки нового сообщения и после завершения ответа.</p>
+  </section>
+
+  <section>
+    <h2>3. Где участвует контекстное окно</h2>
+    <p>Поле «Контекстное окно» в карточке модели говорит DEEIX, сколько истории можно отправлять. Из него DEEIX считает бюджет: окно − резерв на ответ (до 20 000) − запас 13 000. Когда история доходит до <b>80%</b> бюджета, DEEIX после ответа сжимает старые сообщения в краткую сводку.</p>
+    <div class="scroll">
+    <svg viewBox="0 0 800 200" width="100%" style="min-width:620px" role="img" aria-label="Сравнение порогов сжатия: при окне 1 048 576 сжатие на 812 тысячах токенов, при 128 000 — на 76 тысячах">
+      <text x="10" y="30" font-size="13" font-weight="600" fill="var(--fg)">Окно 1 048 576 (если бы DEEIX взял число провайдера)</text>
+      <rect x="10" y="40" width="780" height="26" rx="4" fill="var(--soft)" stroke="var(--line)"/>
+      <rect x="10" y="40" width="74" height="26" rx="4" fill="color-mix(in srgb,var(--bad) 35%,transparent)"/>
+      <line x1="614" y1="34" x2="614" y2="72" stroke="var(--deeix)" stroke-width="2"/>
+      <text x="614" y="88" text-anchor="middle" font-size="11" fill="var(--deeix)" class="mono">сжатие с ~812 тыс.</text>
+      <text x="90" y="88" font-size="11" fill="var(--bad)">зона ~400 КБ, где шлюз уже ломается</text>
+
+      <text x="10" y="130" font-size="13" font-weight="600" fill="var(--fg)">Окно 128 000 (у вас сейчас, «Авто»)</text>
+      <rect x="10" y="140" width="780" height="26" rx="4" fill="var(--soft)" stroke="var(--line)"/>
+      <rect x="10" y="140" width="74" height="26" rx="4" fill="color-mix(in srgb,var(--bad) 35%,transparent)"/>
+      <line x1="68" y1="134" x2="68" y2="172" stroke="var(--deeix)" stroke-width="2"/>
+      <text x="68" y="188" font-size="11" fill="var(--deeix)" class="mono">сжатие с ~76 тыс.</text>
+      <text x="790" y="188" text-anchor="end" font-size="11" fill="var(--muted)" class="mono">шкала: 0 … 1 млн токенов</text>
+    </svg>
+    </div>
+    <p>У вас в карточке модели уже стоит 128 000 в режиме «Авто»: DEEIX не взял 1 млн со страницы провайдера, а подставил своё значение по умолчанию. Значит, история между сообщениями уже сжимается примерно с 76 тыс. токенов, и окно здесь не виновато. 400 КБ русского текста с разметкой — примерно 70–130 тыс. токенов.</p>
+    <p class="note">Но окно ограничивает только историю <i>до</i> начала ответа. Если инструменты за один ответ вернут сотни килобайт, запрос всё равно разрастётся.</p>
+  </section>
+
+  <section>
+    <h2>4. Что делать, если маскирование оставить</h2>
+    <ol class="fix">
+      <li><b>Меньше вызовов инструментов на одно сообщение</b><span class="tag ok">в DEEIX</span><br>Админка → Инструменты: лимит MCP-вызовов. Сейчас за один ответ было 8 вызовов, и запрос дошёл до 400 КБ. Если 4–5 вызовов уже вызывают сбой, уменьшайте лимит.</li>
+      <li><b>Короче результаты инструментов</b><span class="tag mid">по ситуации</span><br>Например, в поиске pravo просить меньше документов или фрагменты вместо полного текста. Тогда каждый шаг добавляет меньше.</li>
+      <li><b>Спросить провайдера про срок маскирования</b><span class="tag mid">у провайдера</span><br>Можно ли увеличить время на подготовку запроса или маскировать только новые сообщения, а не всю историю каждый раз. Это лечит причину.</li>
+    </ol>
+  </section>
+</div>
+
+<script>
+(function(){
+  var sizes=[22,48,90,135,180,228,275,330,398]; // КБ, иллюстрация роста
+  var g=document.getElementById('bars'), ns='http://www.w3.org/2000/svg';
+  var x0=80, step=78, w=46, base=200, scale=180/400;
+  sizes.forEach(function(s,i){
+    var h=s*scale, x=x0+i*step, last=i===sizes.length-1;
+    var r=document.createElementNS(ns,'rect');
+    r.setAttribute('x',x);r.setAttribute('y',base-h);r.setAttribute('width',w);r.setAttribute('height',h);r.setAttribute('rx',3);
+    r.setAttribute('fill',last?'var(--bad)':'var(--deeix)');r.setAttribute('opacity',last?1:.75);g.appendChild(r);
+    var t=document.createElementNS(ns,'text');
+    t.setAttribute('x',x+w/2);t.setAttribute('y',base+16);t.setAttribute('text-anchor','middle');t.setAttribute('font-size','11');t.setAttribute('fill','var(--muted)');
+    t.textContent=(i+1);g.appendChild(t);
+    if(last){var l=document.createElementNS(ns,'text');l.setAttribute('x',x+w/2);l.setAttribute('y',base-h-6);l.setAttribute('text-anchor','middle');l.setAttribute('font-size','11');l.setAttribute('font-weight','600');l.setAttribute('fill','var(--bad)');l.textContent='398 КБ → 503';g.appendChild(l);}
+  });
+})();
+</script>
