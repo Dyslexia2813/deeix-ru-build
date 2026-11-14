@@ -1,0 +1,8 @@
+# deeix-html-visual
+
+_HTML-блоки кодом посреди ответа DEEIX — режим «Промпт визуальной вёрстки», DeepSeek оборачивает HTML в ```html; как чинить._
+
+- 2026-10-23 Kimi: deepseek-anthropic-WEB (скилл brainstorming) вставляет HTML кодом в ```html, нормально видно только в боковом предпросмотре. Хочет не убрать, а «причесать».
+- Причина: кнопка в поле ввода «Промпт визуальной вёрстки» (htmlVisualPrompt) добавляет системный промпт html-visual (backend/internal/application/conversation/system_prompt.go, по-китайски): модель должна писать голый HTML-фрагмент прямо в тексте с inline style и var(--border) и т.п., клиент рисует его на месте. DeepSeek же оборачивает фрагмент в ```html → клиент считает это артефактом (боковая панель). Скилл brainstorming тут ни при чём.
+- 2026-10-23 Kimi выбрал патч: patches/inline-html.patch (флаг --no-inline-html), PR https://github.com/Dyslexia2813/deeix-ru-build/pull/7. Апстрим уже разворачивал такие кусочки из ``` без пометки и ```markdown (normalizeHTMLVisualMarkdownFences), патч добавил html/htm и исключил их из панели артефактов. Сборка run 39959444086 зелёная; инструкция ../instrukcii/inline-html/ustanovka.md (копия out-pered-html). PR #7 слит 2026-10-25; стоит на VPS вместе с кнопками «/» и «@» (PR #8, слит 2026-10-25, Kimi проверил). Нужна только замена out. Заметка: вышел апстрим v0.4.6.
+- Варианты были: выключить кнопку; или добавить в скилл/промпт строку «HTML-вёрстку пиши прямо в тексте, без ```»; или патч фронтенда (chat-artifacts.ts / markdown): ```html-фрагмент без script/style/html рисовать на месте. См. [deeix-table-fit](deeix-table-fit.md), [deeix-chat-skills](deeix-chat-skills.md).
