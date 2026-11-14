@@ -2,6 +2,7 @@
 #   docker compose -f /opt/deeix-ru/compose.pd.yml up -d
 # DEEIX reaches it inside the deeix-chat-network as http://deeix-pd-mask:8090/<route>/...
 # Settings (PD_SECRET, PD_ROUTES, ...) live in /opt/deeix-ru/pd-mask.env, see README.md.
+name: deeix-pd-mask
 services:
   pd-mask:
     container_name: deeix-pd-mask
