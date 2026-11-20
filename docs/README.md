@@ -38,6 +38,7 @@
 | Маскировка ПД (прокси) | `pd-mask/` | #27 | [pd-masking](zametki/deeix-pd-masking.md) | [ustanovka](instrukcii/pd-mask/ustanovka.md) |
 | Окно «Что увидит модель» | `pd-preview` | #28 | [pd-masking](zametki/deeix-pd-masking.md) | [ustanovka](instrukcii/pd-preview/ustanovka.md) |
 | «Скачать Excel» у таблиц в ответе | `table-xlsx` | #30 | [table-xlsx](zametki/deeix-table-xlsx.md) | [ustanovka](instrukcii/table-xlsx/ustanovka.md) |
+| Файлы Word и Excel от модели (MCP) | `office/` + `office-files` | #32 | [office](zametki/deeix-office.md) | [ustanovka](instrukcii/office/ustanovka.md) |
 
 Возможная доработка (Kimi упоминал): список исключений ФИО для маскировки ПД.
 

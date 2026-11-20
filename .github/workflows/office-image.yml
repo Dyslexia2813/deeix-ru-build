@@ -1,0 +1,60 @@
+name: Build deeix-office image
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "office/**"
+      - ".github/workflows/office-image.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: office/go.mod
+
+      - name: Unit tests
+        working-directory: office
+        run: go vet ./... && go test ./...
+
+      - name: Build the image
+        run: docker build -t deeix-office:latest office
+
+      - name: Smoke test with a 64 MB memory limit
+        run: |
+          docker volume create office-smoke
+          docker run -d --name office --memory 64m --memory-swap 64m --read-only -v office-smoke:/data -p 127.0.0.1:8095:8095 deeix-office:latest
+          for i in $(seq 1 20); do curl -fsS http://127.0.0.1:8095/healthz && break; sleep 1; done
+          echo
+          curl -fsS http://127.0.0.1:8095/mcp -H 'content-type: application/json' \
+            -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | grep -q make_xlsx
+          curl -fsS http://127.0.0.1:8095/mcp -H 'content-type: application/json' \
+            -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"make_xlsx","arguments":{"file_name":"Проверка","sheets":[{"columns":[{"title":"A"}],"rows":[[1],[2]]}]}}}' | tee call.json
+          link=$(python3 -c "import json;r=json.load(open('call.json'));print(json.loads(r['result']['content'][0]['text'])['url'])")
+          curl -fsS -o smoke.xlsx "http://127.0.0.1:8095/files/${link#/api/v1/office-files/}"
+          file smoke.xlsx | grep -q "Excel"
+          docker exec office /deeix-office healthcheck
+          docker stats --no-stream office
+          docker logs office
+          docker rm -f office
+
+      - name: Save the image
+        run: |
+          docker save deeix-office:latest | gzip -6 > deeix-office-image.tar.gz
+          docker images deeix-office:latest
+          ls -la deeix-office-image.tar.gz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deeix-office-image
+          path: deeix-office-image.tar.gz
+          compression-level: 0
+          if-no-files-found: error

@@ -37,6 +37,7 @@
 | `deepseek-search` (systemd) | `/opt/deepseek-search`, ключ `/etc/deepseek-search.env` | `http://172.19.0.1:8767/mcp` | Инструменты `ds_search`, `ds_fetch`. В DEEIX называется `deepseek-web-search`. [Инструкция](instrukcii/deepseek-search/ustanovka.md) |
 | `deeix-ocr` (Docker) | `/opt/deeix-ru/compose.ocr.yml`, лимит 300m | `http://deeix-ocr:8004/ocr` | Tesseract rus+eng, только для текстовых моделей. [Инструкция](instrukcii/own-ocr/ustanovka.md) |
 | `deeix-pd-mask` (Docker) | `/opt/deeix-ru/compose.pd.yml`, настройки `/opt/deeix-ru/pd-mask.env` | `http://deeix-pd-mask:8090/<маршрут>` | Маскировка ПД, маршруты `ds`, `kdk`, `zai`. [Инструкция](instrukcii/pd-mask/ustanovka.md) |
+| `deeix-office` (Docker) | `/opt/deeix-ru/compose.office.yml`, том `deeix-office-data`, лимит 64m | `http://deeix-office:8095/mcp` | Файлы Word/Excel от модели, скачивание через `/api/v1/office-files/...`. [Инструкция](instrukcii/office/ustanovka.md) |
 | `zai-search` | — | — | Больше не нужен (заменён deepseek-search) |
 | RustDesk (`1Panel-rustdesk-Wnks`) | Docker | — | Выключен с 2026-11-01. Вернуть: `docker update --restart=always 1Panel-rustdesk-Wnks && docker start 1Panel-rustdesk-Wnks` |
 
