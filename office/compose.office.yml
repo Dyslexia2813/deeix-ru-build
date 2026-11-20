@@ -1,0 +1,32 @@
+# deeix-office next to DEEIX Chat. Start:
+#   docker compose -f /opt/deeix-ru/compose.office.yml up -d
+# DEEIX reaches it inside the deeix-chat-network: MCP at http://deeix-office:8095/mcp,
+# downloads through the DEEIX route /api/v1/office-files/... (patch office-files).
+# Files live in the volume deeix-office-data and are deleted after OFFICE_TTL_DAYS (7) days.
+name: deeix-office
+services:
+  office:
+    container_name: deeix-office
+    image: deeix-office:latest
+    restart: unless-stopped
+    environment:
+      OFFICE_TTL_DAYS: "7"
+      OFFICE_MAX_MB: "200"
+    volumes:
+      - deeix-office-data:/data
+    mem_limit: 64m
+    memswap_limit: 64m
+    cpus: 0.5
+    pids_limit: 64
+    read_only: true
+    networks:
+      - deeix-chat
+
+volumes:
+  deeix-office-data:
+    name: deeix-office-data
+
+networks:
+  deeix-chat:
+    external: true
+    name: deeix-chat-network
