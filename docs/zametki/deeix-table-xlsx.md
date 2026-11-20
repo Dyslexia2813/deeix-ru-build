@@ -1,0 +1,8 @@
+# deeix-table-xlsx
+
+- 2026-11-18 Kimi спросил, читает ли DEEIX Excel. Ответ: модель текст .xlsx/.xls/.csv получает (встроенный чтец `backend/internal/infra/extraction/builtin/excel.go`, excelize; формат `[Sheet: Имя]` + ячейки через запятую), а окно просмотра вложения .xlsx не показывает — `resolveFilePreviewKind` отдаёт xlsx в "native" (iframe браузера), таблицей показывается только csv. Наши патчи это не трогают.
+- Создавать .docx/.xlsx сама модель не может: «выполнение кода» в v0.4.6 есть только у OpenAI/Anthropic/Google/xAI, у DeepSeek и GLM нет. Word — наш экспорт ответа ([deeix-docx-export](deeix-docx-export.md)).
+- 2026-11-20 Kimi выбрал «Скачать в Excel» у таблиц в ответе: `patches/table-xlsx.patch` (ключ `--no-table-xlsx`, нужен `data-table-fit`, ставится последним), новые `files/.../shared/lib/export-xlsx.ts` (свой xlsx на `zip-writer.ts`, без npm) и `shared/components/markdown/table-export-menu.tsx` (меню Radix). Markdown-таблица: вместо `TableDownloadDropdown` из streamdown своё меню Excel/CSV/Markdown (данные через `extractTableDataFromElement`, CSV теперь с BOM). Реестр data-table: меню Excel/CSV (порядок и фильтр как на экране).
+- В xlsx: жирная закреплённая строка заголовков с фильтром, ширина колонок по тексту (≤60), перенос длинного текста и `<br>`, числа «1 250 000», «84 300,50» — числами; ИНН и прочие >9 цифр подряд, «007», «12%», даты, «1,234» — текстом.
+- Проверка локально: Playwright → скачанный файл → openpyxl и LibreOffice (PDF→PNG). Playwright в headless показывает имя скачанного файла как `download` и у CSV апстрима тоже — особенность headless, не баг.
+- Ещё предлагалось (решения нет): просмотр .xlsx во вложении таблицей; аккуратнее текст xlsx для модели (буквы колонок, кавычки, объединённые ячейки).
