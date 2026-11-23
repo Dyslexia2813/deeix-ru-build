@@ -1,14 +1,12 @@
 # Установка: компоненты вместо HTML-тегов в ответе (PR #33)
 
 PR: https://github.com/Dyslexia2813/deeix-ru-build/pull/33
+Сборка: https://github.com/Dyslexia2813/deeix-ru-build/actions/runs/45260290324 (артефакты `deeix-ru-out` и `deeix-ru-backend`).
 
 Меняются **сайт (`out`)** и **бэкенд (`deeix-chat`)**. База и настройки не меняются. В сборке всё, что уже стоит на сервере (до PR #32 включительно), плюс эта правка.
 
-## Шаг 0. Запустить сборку
-Откройте https://github.com/Dyslexia2813/deeix-ru-build/actions/workflows/build.yml → «Run workflow» → в списке Branch выберите `claude/project-thread-g0y85i`, tag оставьте `v0.4.6` → зелёная кнопка «Run workflow». Сборка идёт минут 10–15.
-
 ## Шаг 1. Скачать
-1. Когда у запуска появится зелёная галочка, откройте его и внизу в разделе Artifacts скачайте `deeix-ru-out` и `deeix-ru-backend`.
+1. Откройте https://github.com/Dyslexia2813/deeix-ru-build/actions/runs/45260290324 и внизу в разделе Artifacts скачайте `deeix-ru-out` и `deeix-ru-backend`.
 2. В 1Panel → «Файлы» удалите старые zip с такими именами в `/opt/deeix-ru/` и загрузите новые. Если браузер добавил к имени ` (1)`, переименуйте.
 
 ## Шаг 2. Поставить
