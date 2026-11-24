@@ -1,7 +1,7 @@
 # Установка: «Цитировать» выделенный текст ответа (PR #34)
 
 PR: https://github.com/Dyslexia2813/deeix-ru-build/pull/34
-Сборка: RUN_LINK (ветка `claude/project-thread-q853j0`).
+Сборка: https://github.com/Dyslexia2813/deeix-ru-build/actions/runs/45353214024 (ветка `claude/project-thread-q853j0`).
 Меняется только сайт (`out`), бэкенд и база не затрагиваются. Сборка содержит всё, что уже стоит на сервере (main), плюс цитирование.
 
 ## Шаг 1. Скачать
