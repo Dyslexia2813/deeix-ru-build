@@ -8,3 +8,4 @@ _HTML-страница (артефакт) из ответа модели отк�
 - В шапке панели «Артефакт» тоже кнопка ⤢. Чтобы она не заезжала под вкладки в узкой панели, вкладки стоят в строке (не absolute по центру), а «Артефакт» и переключатель (если артефакт один) прячутся при ширине шапки < 34rem (container query).
 - Подписи через `useLocale` (`shared/lib/artifact-fullscreen-labels.ts`), json не менялись. Патч от других не зависит (проверено на чистом v0.4.6), ставится последним. Ключ `--no-artifact-fullscreen`. Только сайт (`out`), строка для проверки: `code-block-fullscreen`.
 - В `pnpm --filter @deeix/web check` старые ошибки не из этого патча (chat-cost-badge.tsx — biome; chat-pd-preview.tsx, use-chat-conversation-cost.ts — check:arch). typecheck чистый.
+- 2026-11-25 Kimi проверил на VPS («работает»), PR #36 слит, стоит на сервере.
