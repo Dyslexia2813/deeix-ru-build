@@ -41,6 +41,7 @@
 | Файлы Word и Excel от модели (MCP) | `office/` + `office-files` | #32 | [office](zametki/deeix-office.md) | [ustanovka](instrukcii/office/ustanovka.md) |
 | Цитировать выделенный текст ответа | `quote-select` | #34 | [quote-select](zametki/deeix-quote-select.md) | [ustanovka](instrukcii/quote-select/ustanovka.md) |
 | Заголовки обычных таблиц переносятся, «Открыть во всю ширину» | `md-table-full` | #35 | [md-table-full](zametki/deeix-md-table-full.md) | [ustanovka](instrukcii/md-table-full/ustanovka.md) |
+| HTML-страница из ответа на весь экран | `artifact-fullscreen` | #PR | [artifact-fullscreen](zametki/deeix-artifact-fullscreen.md) | [ustanovka](instrukcii/artifact-fullscreen/ustanovka.md) |
 
 Возможная доработка (Kimi упоминал): список исключений ФИО для маскировки ПД.
 
